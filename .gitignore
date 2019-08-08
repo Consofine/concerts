@@ -1,0 +1,8 @@
+# files
+emailkeys.py
+keys.py
+artists.csv
+savedArtists.csv
+
+
+__pycache__/
