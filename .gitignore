@@ -3,6 +3,8 @@ emailkeys.py
 keys.py
 artists.csv
 savedArtists.csv
+tickets.sh
+
 
 
 __pycache__/

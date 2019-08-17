@@ -10,7 +10,7 @@ from smtplib import SMTP
 import smtplib
 import keys
 import emailkeys
-
+import ipdb
 
 months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 def formatDate(date):
@@ -18,6 +18,17 @@ def formatDate(date):
 	month = months[int(date[date.index('-')+1:date.rfind('-')])-1]
 	day = date[date.rfind('-')+1:]
 	return ('{} {}, {}'.format(month, day, year))
+
+def cat(filename, name, venue, date, priceRange, url):
+	with open(filename, 'r') as f:
+		string = f.read()
+		string = string.replace('$prices', priceRange)
+		string = string.replace('$title', name)
+		string = string.replace('$venue', venue)
+		string = string.replace('$date', date)
+		string = string.replace('$link', url)
+	f.close()
+	return string
 
 baseUrl = 'https://app.ticketmaster.com/discovery/v2/events'
 city = 'Chicago'
@@ -50,7 +61,7 @@ for event in data['_embedded']['events']:
 						lowerPrice += '0'
 					if (len(upperPrice[upperPrice.index('.'):]) < 3):
 						upperPrice += '0'
-					priceRange = '{}-${}'.format(lowerPrice, upperPrice)
+					priceRange = '${}-${}'.format(lowerPrice, upperPrice)
 					tickmasterArtists[event['name']] = {'date': date, 'venue': venue, 'priceRange': priceRange}
 	except:
 		continue
@@ -101,66 +112,47 @@ for key in ticketmasterArtists.keys():
 		print('New artist: {}'.format(key))
 		newArtists.append(key)
 		savedArtists = savedArtists.append(pd.DataFrame([key], columns=['artist']), ignore_index=True)
+savedArtists = savedArtists.reset_index(drop=True)
+for artist in savedSet.values:
+	if artist not in ticketmasterArtists.keys():
+		print(savedArtists)
+		savedArtists = pd.DataFrame(savedArtists[savedArtists.artist != artist], ignore_index=True)
+		print("Removed: {}".format(artist))
+print(savedArtists)
 savedArtists.to_csv('savedArtists.csv')
-
-
-# because who doesn't love writing poorly styled html in python strings
-artistList = """<html>
-<head>
-</head>
-<body>
-	<div><ul style="padding-inline-start: 0px;">"""
-for artist in newArtists:
-	artistList += """
-				<li style="list-style: none;padding-bottom: 24px;">
-					<div style="background-color: #9BC5DE;">
-						<hr style="border: 1px solid #9BC5DE;" />
-						<h1 style="color: white; text-align: center;font-size: 40px;font-weight: normal; line-height: 32px">{}</h1>
-						<hr style="border: 1px solid #9BC5DE;" />
-					</div>
-					<div style="margin: 16px 0px 12px 24px">
-						<div style="padding: 8px 0; ">
-							<span style="font-size: 24px; font-weight: bold;">Performing at:</span>
-							<span style="font-size: 24px;">{}</span>
-						</div>
-						<div style="padding: 8px 0;">
-							<span style="font-size: 24px; font-weight: bold;">Date:</span>
-							<span style="font-size: 24px;">{}</span>
-						</div>
-						<div style="padding: 8px 0;">
-							<span style="font-size: 24px;font-weight:bold;">Ticket price range:</span>
-							<span style="font-size: 24px;">${}</span>
-						</div>
-					</div>
-					<div style="text-align: center;">
-						<a href="{}">
-							<button style="color: white; background-color: #9BC5DE; padding: 12px 20px; border-radius: 4px; border: none; cursor: pointer; text-align: center; font-weight: 300; box-sizing: border-box; font-size: 24px;">View Tickets</button>
-						</a>
-					</div>
-				</li>""".format(artist, ticketmasterArtists[artist]['venue'], ticketmasterArtists[artist]['date'], ticketmasterArtists[artist]['priceRange'], ticketmasterArtists[artist]['url'])
-artistList += """<ul\>"""
-mes = """\
-<html>
-  <head></head>
-  <body>
-	{}
-  </body>
-</html>""".format(artistList)
+savedSet = savedArtists['artist']
+emailMes = ""
 if newArtists:
-	print(mes)
-	to = ", "
-	to_l = emailkeys.to_list
-	emaillist = to_l
-	msg = MIMEMultipart()
-	msg['To'] = ",".join(to_l)
-	msg['Subject'] = "Concerts Update"
-	msg['From'] = emailkeys.from_name
-	msg.preamble = 'Multipart message.\n'
-	part = MIMEText(mes, 'html')
-	msg.attach(part)
-	server = smtplib.SMTP("smtp.gmail.com:587")
-	server.ehlo()
-	server.starttls()
-	server.login(emailkeys.email, emailkeys.password)
-	server.sendmail(msg['From'], emaillist , msg.as_string())
-	print("Email sent")
+	with open('inline-title.html', 'r') as f:
+		title = f.read()
+		emailMes += title.replace('$title', 'New Artists')
+	f.close()
+	for artist in newArtists:
+		artistData = ticketmasterArtists[artist]
+		emailMes += cat('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
+with open('inline-title.html', 'r') as f:
+	title = f.read()
+	emailMes += title.replace('$title', 'Old Artists')
+f.close()
+for artist in savedSet.values:
+	artistData = ticketmasterArtists[artist]
+	emailMes += cat('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
+with open('inline.html', 'r') as f:
+	mes = f.read()
+	mes = mes.replace('$body', emailMes)
+	f.close()
+to_l = emailkeys.to_list
+emaillist = to_l
+msg = MIMEMultipart()
+msg['To'] = ",".join(to_l)
+msg['Subject'] = "Concerts Update"
+msg['From'] = emailkeys.from_name
+msg.preamble = 'Multipart message.\n'
+part = MIMEText(mes, 'html')
+msg.attach(part)
+server = smtplib.SMTP("smtp.gmail.com:587")
+server.ehlo()
+server.starttls()
+server.login(emailkeys.email, emailkeys.password)
+server.sendmail(msg['From'], emaillist , msg.as_string())
+print("Email sent")

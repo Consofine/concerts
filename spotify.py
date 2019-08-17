@@ -49,6 +49,6 @@ def main():
         with open('artists.csv', 'w') as f:
             newDict.to_csv(f)
     else:
-        print("Can't get token for", username)
+        print("Can't get token for ", username)
 
 main()
