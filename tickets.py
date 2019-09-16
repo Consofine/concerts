@@ -107,7 +107,7 @@ savedArtists = savedArtists.reset_index(drop=True)
 for artist in savedSet.values:
 	if artist not in ticketmasterArtists.keys():
 		print(savedArtists)
-		savedArtists = pd.DataFrame(savedArtists[savedArtists.artist != artist], ignore_index=True)
+		savedArtists = pd.DataFrame(savedArtists[savedArtists.artist != artist])
 		# print("Removed: {}".format(artist))
 print(savedArtists)
 savedArtists.to_csv('{}savedArtists.csv'.format(basePath))
@@ -133,20 +133,21 @@ with open('{}inline.html'.format(basePath), 'r') as f:
 	mes = mes.replace('$body', emailMes)
 	f.close()
 #list of recipients' addresses
-to_l = emailkeys.to_list
-emaillist = to_l
-msg = MIMEMultipart()
-msg['To'] = ",".join(to_l)
-msg['Subject'] = "Concerts Update"
-#name to show email as being from
-msg['From'] = emailkeys.from_name
-msg.preamble = 'Multipart message.\n'
-part = MIMEText(mes, 'html')
-msg.attach(part)
-server = smtplib.SMTP("smtp.gmail.com:587")
-server.ehlo()
-server.starttls()
-#login with email address and password
-server.login(emailkeys.email, emailkeys.password)
-server.sendmail(msg['From'], emaillist , msg.as_string())
-# print("Email sent")
+if (newArtists):
+	to_l = emailkeys.to_list
+	emaillist = to_l
+	msg = MIMEMultipart()
+	msg['To'] = ",".join(to_l)
+	msg['Subject'] = "Concerts Update"
+	#name to show email as being from
+	msg['From'] = emailkeys.from_name
+	msg.preamble = 'Multipart message.\n'
+	part = MIMEText(mes, 'html')
+	msg.attach(part)
+	server = smtplib.SMTP("smtp.gmail.com:587")
+	server.ehlo()
+	server.starttls()
+	#login with email address and password
+	server.login(emailkeys.email, emailkeys.password)
+	server.sendmail(msg['From'], emaillist , msg.as_string())
+	print("Email sent")
