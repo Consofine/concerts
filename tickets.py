@@ -22,7 +22,7 @@ def formatDate(date):
 	day = date[date.rfind('-')+1:]
 	return ('{} {}, {}'.format(month, day, year))
 
-def cat(filename, name, venue, date, priceRange, url):
+def formatEmail(filename, name, venue, date, priceRange, url):
 	with open(basePath+filename, 'r') as f:
 		string = f.read()
 		string = string.replace('$prices', priceRange)
@@ -120,34 +120,33 @@ if newArtists:
 	f.close()
 	for artist in newArtists:
 		artistData = ticketmasterArtists[artist]
-		emailMes += cat('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
+		emailMes += formatEmail('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
 with open('{}inline-title.html'.format(basePath), 'r') as f:
 	title = f.read()
 	emailMes += title.replace('$title', 'Old Artists')
 f.close()
 for artist in savedSet.values:
 	artistData = ticketmasterArtists[artist]
-	emailMes += cat('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
+	emailMes += formatEmail('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
 with open('{}inline.html'.format(basePath), 'r') as f:
 	mes = f.read()
 	mes = mes.replace('$body', emailMes)
 	f.close()
 #list of recipients' addresses
-if (newArtists):
-	to_l = emailkeys.to_list
-	emaillist = to_l
-	msg = MIMEMultipart()
-	msg['To'] = ",".join(to_l)
-	msg['Subject'] = "Concerts Update"
-	#name to show email as being from
-	msg['From'] = emailkeys.from_name
-	msg.preamble = 'Multipart message.\n'
-	part = MIMEText(mes, 'html')
-	msg.attach(part)
-	server = smtplib.SMTP("smtp.gmail.com:587")
-	server.ehlo()
-	server.starttls()
-	#login with email address and password
-	server.login(emailkeys.email, emailkeys.password)
-	server.sendmail(msg['From'], emaillist , msg.as_string())
-	print("Email sent")
+to_l = emailkeys.to_list
+emaillist = to_l
+msg = MIMEMultipart()
+msg['To'] = ",".join(to_l)
+msg['Subject'] = "Concerts Update"
+#name to show email as being from
+msg['From'] = emailkeys.from_name
+msg.preamble = 'Multipart message.\n'
+part = MIMEText(mes, 'html')
+msg.attach(part)
+server = smtplib.SMTP("smtp.gmail.com:587")
+server.ehlo()
+server.starttls()
+#login with email address and password
+server.login(emailkeys.email, emailkeys.password)
+server.sendmail(msg['From'], emaillist , msg.as_string())
+print("Email sent")

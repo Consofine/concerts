@@ -1377,3 +1377,7 @@ body.outlook p {
     padding: 0 !important;
   }
 }
+
+th {
+  vertical-align: top !important;
+}
