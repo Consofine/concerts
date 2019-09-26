@@ -77,7 +77,7 @@ for x in range(1, pageNumbers):
 	r = requests.get(baseUrl, params=payload)
 	data = r.json()
 	try:
-		# print('Working: page #{}'.format(x))
+		print('Working: page #{}'.format(x))
 		for event in data['_embedded']['events']:
 			try:
 				getInfo(event)
@@ -109,7 +109,7 @@ for artist in savedSet.values:
 		print(savedArtists)
 		savedArtists = pd.DataFrame(savedArtists[savedArtists.artist != artist])
 		# print("Removed: {}".format(artist))
-print(savedArtists)
+print(ticketmasterArtists)
 savedArtists.to_csv('{}savedArtists.csv'.format(basePath))
 savedSet = savedArtists['artist']
 emailMes = ""
@@ -125,7 +125,9 @@ with open('{}inline-title.html'.format(basePath), 'r') as f:
 	title = f.read()
 	emailMes += title.replace('$title', 'Old Artists')
 f.close()
-for artist in savedSet.values:
+#changed this
+print(savedArtists)
+for artist in ticketmasterArtists.keys():
 	artistData = ticketmasterArtists[artist]
 	emailMes += formatEmail('inline-section.html', artist, artistData['venue'], artistData['date'], artistData['priceRange'], artistData['url'])
 with open('{}inline.html'.format(basePath), 'r') as f:
